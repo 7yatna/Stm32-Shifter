@@ -1,2 +1,15 @@
 /libopencm3
 /libopeninv
+linker.map
+linker.map
+*.o
+*.o
+*.o
+/obj
+stm32_Shifter
+stm32_Shifter.bin
+stm32_Shifter.hex
+stm32_Shifter.hex
+stm32_Shifter.bin
+stm32_Shifter
+linker.map

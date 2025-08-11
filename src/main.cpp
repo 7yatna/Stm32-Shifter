@@ -29,6 +29,7 @@
 #include "params.h"
 #include "hwdefs.h"
 #include "digio.h"
+#include "mag_snsor.h"
 #include "hwinit.h"
 #include "anain.h"
 #include "param_save.h"
@@ -80,6 +81,7 @@ static void Ms100Task(void)
     Param::SetFloat(Param::CPU_LOAD, cpuLoad / 10);
    // CAN_Common::Task100Ms();
     Param::SetInt(Param::GEAR, (Param::GetInt(Param::gear)));
+	MagAngle::ReadMag1Angle();
 	/*
 	
 	if (Param::GetInt(Param::P_LED)) DigIo::P_LED.Set();
@@ -114,7 +116,9 @@ static void Ms100Task(void)
 	
 	if (Param::GetInt(Param::CS2)) DigIo::CS2.Set();
 	else DigIo::CS2.Clear();
-	*/
+
+	
+	
 	
     uint8_t bytes[8];
     bytes[0]=0x05;
@@ -126,12 +130,16 @@ static void Ms100Task(void)
     bytes[6]=0x00;
     bytes[7]=0x69;
     can->Send(0x380, bytes, 8); //Send on CAN1
+		*/
 }
 
 static void Ms200Task(void)
 {
 	Power_ON();
 	Set_LED();
+	//just for dev
+    //MagAngle::ReadMag2Angle(); //just for dev
+	//DigIo::CS1.Toggle();
 }
 
 
@@ -147,8 +155,8 @@ void PinIntialization()
 	DigIo::M1_CCW.Clear();
 	DigIo::M2_CW.Clear();
 	DigIo::M2_CCW.Clear();
-	DigIo::CS1.Clear();
-	DigIo::CS2.Clear();
+	DigIo::CS1.Set();
+	DigIo::CS2.Set();
 	DigIo::BkLT_LED.Set();
 	Param::SetInt(Param::GEAR, 4);
 }
@@ -407,6 +415,7 @@ extern "C" int main(void)
     Param::SetInt(Param::VERSION, 4);
     Param::Change(Param::PARAM_LAST); //Call callback one for general parameter propagation
 	PinIntialization();
+	
 
     while(1)
     {

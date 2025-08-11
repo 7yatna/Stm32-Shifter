@@ -63,10 +63,16 @@
 	VALUE_ENTRY(NEUTRAL_LED, 	OFFON,		2006 )\
 	VALUE_ENTRY(DRIVE_LED, 	    OFFON,		2007 )\
 	VALUE_ENTRY(BACKLIGHT, 	   	OFFON,		2008 )\
-	VALUE_ENTRY(Lock1, 	   	   	"",			2009 )\
-	VALUE_ENTRY(Lock2, 	   	   	"",			2010 )\
-	VALUE_ENTRY(VERSION,       	VERSTR,		2011 )\
-    VALUE_ENTRY(CPU_LOAD,       "%", 		2012 )
+	VALUE_ENTRY(Angle_LSB, 	   	"",			2009 )\
+	VALUE_ENTRY(Angle, 	   		"Degree",	2010 )\
+	VALUE_ENTRY(ERR_Bits, 	   	"",			2011 )\
+	VALUE_ENTRY(CRC, 	   		"",			2012 )\
+	VALUE_ENTRY(Virtual_Gain, 	"",			2013 )\
+	VALUE_ENTRY(Rolling_Counter,"",			2014 )\
+	VALUE_ENTRY(Lock1, 	   	   	"",			2015 )\
+	VALUE_ENTRY(Lock2, 	   	   	"",			2016 )\
+	VALUE_ENTRY(VERSION,       	VERSTR,		2017 )\
+    VALUE_ENTRY(CPU_LOAD,       "%", 		2018 )
 
 
 /***** Enum String definitions *****/
