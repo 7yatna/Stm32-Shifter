@@ -14,7 +14,7 @@
 
 //Here you specify a list of analog inputs, see main.cpp on how to use them
 #define ANA_IN_LIST \
-   ANA_IN_ENTRY(Vsense, GPIOA, 2) \
+   ANA_IN_ENTRY(Vsense,  GPIOA, 2) \
    ANA_IN_ENTRY(Lock1, 	 GPIOA, 0) \
    ANA_IN_ENTRY(Lock2, 	 GPIOA, 1) \
 

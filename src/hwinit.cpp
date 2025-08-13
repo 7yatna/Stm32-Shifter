@@ -55,10 +55,7 @@ void clock_setup(void)
    rcc_periph_clock_enable(RCC_GPIOC);
    rcc_periph_clock_enable(RCC_GPIOD);
    rcc_periph_clock_enable(RCC_USART3);
-   //rcc_periph_clock_enable(RCC_USART1);//Model S slaves
    rcc_periph_clock_enable(RCC_TIM2); //Scheduler
-   //rcc_periph_clock_enable(RCC_TIM3); //PWM outputs	
-   //rcc_periph_clock_enable(RCC_TIM4); //PWM outputs  
    rcc_periph_clock_enable(RCC_DMA1);  //ADC, Encoder and UART receive
    rcc_periph_clock_enable(RCC_ADC1);
    rcc_periph_clock_enable(RCC_CRC);
@@ -133,14 +130,10 @@ void rtc_setup()
 
 void spi1_setup()   //spi 1 used for BATMAN!
 {
-   spi_reset(SPI1);
    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO7 | GPIO5);//MOSI , CLK
    gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO6);//MISO
    spi_reset(SPI1);
-   spi_init_master(SPI1, SPI_CR1_BAUDRATE_FPCLK_DIV_16, // 8MHz / 16 = 500 kHz
-    SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE,
-    SPI_CR1_CPHA_CLK_TRANSITION_2, // CPHA=1 (Mode 1)
-    SPI_CR1_DFF_8BIT, SPI_CR1_MSBFIRST);
+   spi_init_master(SPI1, SPI_CR1_BAUDRATE_FPCLK_DIV_256, SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, SPI_CR1_CPHA_CLK_TRANSITION_2, SPI_CR1_DFF_8BIT, SPI_CR1_MSBFIRST);
    spi_set_standard_mode(SPI1,1);//set mode 1
    spi_enable_software_slave_management(SPI1);
    spi_set_nss_high(SPI1);
@@ -148,19 +141,3 @@ void spi1_setup()   //spi 1 used for BATMAN!
 }
 
 
-
-/*
-void usart1_setup(void)
-{
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
-	usart_set_baudrate(USART1, 612500);
-	usart_set_databits(USART1, 8);
-	usart_set_stopbits(USART1, USART_STOPBITS_1);
-	usart_set_mode(USART1, USART_MODE_TX_RX);
-	usart_set_parity(USART1, USART_PARITY_NONE);
-	usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
-	usart_enable(USART1);
-
-}
-
-*/

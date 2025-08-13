@@ -29,6 +29,7 @@ extern "C"
 void clock_setup(void);
 void nvic_setup(void);
 void rtc_setup(void);
+void spi1_setup(void);
 void M1_Locking();
 void Power_ON();
 void Set_LED();

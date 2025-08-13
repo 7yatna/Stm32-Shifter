@@ -68,6 +68,7 @@ static void Ms10Task(void)
 	Param::SetInt(Param::Lock2, Lock2);
 	M1_Locking();
 	
+	
 }
 
 
@@ -81,7 +82,8 @@ static void Ms100Task(void)
     Param::SetFloat(Param::CPU_LOAD, cpuLoad / 10);
    // CAN_Common::Task100Ms();
     Param::SetInt(Param::GEAR, (Param::GetInt(Param::gear)));
-	MagAngle::ReadMag1Angle();
+	
+	
 	/*
 	
 	if (Param::GetInt(Param::P_LED)) DigIo::P_LED.Set();
@@ -116,7 +118,7 @@ static void Ms100Task(void)
 	
 	if (Param::GetInt(Param::CS2)) DigIo::CS2.Set();
 	else DigIo::CS2.Clear();
-
+*/
 	
 	
 	
@@ -130,19 +132,16 @@ static void Ms100Task(void)
     bytes[6]=0x00;
     bytes[7]=0x69;
     can->Send(0x380, bytes, 8); //Send on CAN1
-		*/
+		
 }
 
 static void Ms200Task(void)
 {
 	Power_ON();
 	Set_LED();
-	//just for dev
-    //MagAngle::ReadMag2Angle(); //just for dev
-	//DigIo::CS1.Toggle();
+	MagAngle::ReadMag1Angle();
+    //MagAngle::ReadMag2Angle();
 }
-
-
 
 void PinIntialization()
 {
@@ -330,7 +329,7 @@ void Param::Change(Param::PARAM_NUM paramNum)
     switch (paramNum)
     {
 		case Param::nodeid:
-         //CanSdo->SetNodeId(Param::GetInt(Param::nodeid));
+        // CanSdo->SetNodeId(Param::GetInt(Param::nodeid));
 			break; 
 		case Param::M1_LOCK:
 			//M1_Locking();
@@ -383,6 +382,7 @@ extern "C" int main(void)
     write_bootloader_pininit(); //Instructs boot loader to initialize certain pins
     nvic_setup(); //Set up some interrupts
     parm_load(); //Load stored parameters
+	spi1_setup();											
     Stm32Scheduler s(TIM2); //We never exit main so it's ok to put it on stack
     scheduler = &s;
 	
@@ -392,7 +392,7 @@ extern "C" int main(void)
 
 //store a pointer for easier access
     can = &c;
-    //c.SetNodeId(2);
+   // c.SetNodeId(2);
     c.AddCallback(&cb);
     CanMap cm(&c);
     CanSdo sdo(&c, &cm);
