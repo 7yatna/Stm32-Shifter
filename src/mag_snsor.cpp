@@ -60,11 +60,11 @@ void MagAngle::ReadMag1Angle()
 		for (int i = 0; i< 8; i++)
 			{
 				spi_send(SPI1, GET1_msg[i]);
-				received_data[i] = spi_read(SPI1);
+				//received_data[i] = spi_read(SPI1);
 				//received_data[i] = spi_xfer(SPI1, GET1_msg[i]);
 			}
 		DigIo::CS1.Set();
-		 
+		 /*
 		DigIo::CS1.Clear();
 		
 		for (int i = 0; i< 8; i++)
@@ -75,7 +75,7 @@ void MagAngle::ReadMag1Angle()
 			}
 			
 		DigIo::CS1.Set();
-		
+		*/
 		u16_angle_lsb = (received_data[1] & 0x3F) << 8;
 		u16_angle_lsb = u16_angle_lsb + received_data[0];
 		f32_angle_degrees = u16_angle_lsb * f32_lsb_to_dec_degrees;
