@@ -13,3 +13,4 @@ stm32_Shifter.hex
 stm32_Shifter.bin
 stm32_Shifter
 linker.map
+linker.map

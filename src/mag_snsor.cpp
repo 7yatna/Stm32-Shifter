@@ -25,10 +25,6 @@ uint8_t GET1_msg[8];
 uint8_t NOP_msg[8];
 float f32_angle_degrees = 0.0;
 uint16_t u16_angle_lsb = 0;
-uint8_t u8_error_lsb = 0;
-uint8_t u8_rollcnt_dec = 0;
-uint8_t u8_virtualgain_dec = 0;
-char u8_crc_dec = 0;
 const float f32_lsb_to_dec_degrees = 0.02197;
 
 
