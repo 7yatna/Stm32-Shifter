@@ -68,7 +68,6 @@ static void Ms10Task(void)
 	Param::SetInt(Param::Lock2, Lock2);
 	M1_Locking();
 	
-	
 }
 
 
@@ -80,6 +79,7 @@ static void Ms100Task(void)
     Param::SetFloat(Param::VOLTAGE, ((float)AnaIn::Vsense.Get()) / uauxGain);
     float cpuLoad = scheduler->GetCpuLoad();
     Param::SetFloat(Param::CPU_LOAD, cpuLoad / 10);
+	MagAngle::ReadMag1Angle();
    // CAN_Common::Task100Ms();
     Param::SetInt(Param::GEAR, (Param::GetInt(Param::gear)));
 	
@@ -139,8 +139,7 @@ static void Ms200Task(void)
 {
 	Power_ON();
 	Set_LED();
-	MagAngle::ReadMag1Angle();
-    //MagAngle::ReadMag2Angle();
+	
 }
 
 void PinIntialization()
@@ -412,7 +411,7 @@ extern "C" int main(void)
     s.AddTask(Ms100Task, 100);
 	s.AddTask(Ms200Task, 200);
 
-    Param::SetInt(Param::VERSION, 4);
+    Param::SetInt(Param::version, 4);
     Param::Change(Param::PARAM_LAST); //Call callback one for general parameter propagation
 	PinIntialization();
 	

@@ -50,10 +50,10 @@
 //Next value Id: 2028
 /*              category     name         unit       min     max     default id */
 #define PARAM_LIST \
-	PARAM_ENTRY(CAT_IO,    	   M1_LOCK,     OFFON,     	0,      1,      0,   1) \
-	PARAM_ENTRY(CAT_IO,    	   M2_LOCK,     OFFON,     	0,      1,      0,   2) \
-	PARAM_ENTRY(CAT_IO,        nodeid,     	"",     	1,      63,     5,   3) \
-	PARAM_ENTRY(CAT_IO,        gear,     	GEARS,     	0,      4,      0,   4) \
+	PARAM_ENTRY(CAT_IO,    	   	M1_LOCK,     OFFON,     	0,      1,      0,   1) \
+	PARAM_ENTRY(CAT_IO,    	   	M2_LOCK,     OFFON,     	0,      1,      0,   2) \
+	PARAM_ENTRY(CAT_IO,         nodeid,     	"",     	1,      63,     5,   3) \
+	PARAM_ENTRY(CAT_IO,        	gear,     	GEARS,     	0,      4,      0,   4) \
 	VALUE_ENTRY(MODE,        	OPMODES,	2000 )\
 	VALUE_ENTRY(GEAR, 	   	   	GEARS,   	2001 )\
 	VALUE_ENTRY(VOLTAGE, 	   	"V",		2002 )\
@@ -63,15 +63,10 @@
 	VALUE_ENTRY(NEUTRAL_LED, 	OFFON,		2006 )\
 	VALUE_ENTRY(DRIVE_LED, 	    OFFON,		2007 )\
 	VALUE_ENTRY(BACKLIGHT, 	   	OFFON,		2008 )\
-	VALUE_ENTRY(Angle_LSB, 	   	"",			2009 )\
 	VALUE_ENTRY(Angle, 	   		"Degree",	2010 )\
-	VALUE_ENTRY(ERR_Bits, 	   	"",			2011 )\
-	VALUE_ENTRY(CRC, 	   		"",			2012 )\
-	VALUE_ENTRY(Virtual_Gain, 	"",			2013 )\
-	VALUE_ENTRY(Rolling_Counter,"",			2014 )\
 	VALUE_ENTRY(Lock1, 	   	   	"",			2015 )\
 	VALUE_ENTRY(Lock2, 	   	   	"",			2016 )\
-	VALUE_ENTRY(VERSION,       	VERSTR,		2017 )\
+	VALUE_ENTRY(version,       	VERSTR,		2017 )\
     VALUE_ENTRY(CPU_LOAD,       "%", 		2018 )
 
 
