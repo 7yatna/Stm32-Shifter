@@ -30,11 +30,13 @@ void clock_setup(void);
 void nvic_setup(void);
 void rtc_setup(void);
 void spi1_setup(void);
+void write_bootloader_pininit();
+
 void M1_Locking();
 void Power_ON();
 void Set_LED();
-
-void write_bootloader_pininit();
+void Can_Tasks();
+void Set_Gear();
 
 #ifdef __cplusplus
 }

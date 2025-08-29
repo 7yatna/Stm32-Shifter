@@ -27,15 +27,13 @@
 #include <libopencm3/stm32/dma.h>
 #include <libopencm3/stm32/rtc.h>
 #include <libopencm3/stm32/crc.h>
+#include <libopencm3/stm32/spi.h>
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/stm32/desig.h>
-#include <libopencm3/stm32/spi.h>
 #include "hwdefs.h"
 #include "hwinit.h"
 #include "stm32_loader.h"
 #include "my_string.h"
-#include "digio.h"
-#include "params.h"
 
 /**
 * Start clocks of all needed peripherals

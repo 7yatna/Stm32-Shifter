@@ -22,6 +22,7 @@
 #include <libopencm3/stm32/rtc.h>
 #include <libopencm3/stm32/can.h>
 #include <libopencm3/stm32/iwdg.h>
+#include <libopencm3/stm32/desig.h>
 #include "stm32_can.h"
 #include "canmap.h"
 #include "cansdo.h"
@@ -29,7 +30,6 @@
 #include "params.h"
 #include "hwdefs.h"
 #include "digio.h"
-#include "mag_snsor.h"
 #include "hwinit.h"
 #include "anain.h"
 #include "param_save.h"
@@ -38,7 +38,9 @@
 #include "printf.h"
 #include "stm32scheduler.h"
 #include "terminalcommands.h"
-#include "CAN_Common.h"
+#include "my_string.h"
+//#include "CAN_Common.h"
+#include "mag_snsor.h"
 #define PRINT_JSON 0
 
 extern "C" void __cxa_pure_virtual()
@@ -49,25 +51,29 @@ extern "C" void __cxa_pure_virtual()
 static Stm32Scheduler* scheduler;
 static CanHardware* can;
 static CanMap* canMap;
-
+static CanSdo* canSdo;
 
 int uauxGain = 223; //!! hard coded AUX gain
-
 int Lock1 = 0;
 int Lock2 = 0;
 int lock_counter = 0;
 int PON_counter = 0;
+int LED_RUN = 0;
+
+uint8_t Gcount = 0x00;
+uint8_t shiftPos = 0xE1;  // P=0xE1, R=0xD2, N=0xB4, D=0x78, ERR = 0xFF.
 
 static void Ms10Task(void)
 {
     //Set timestamp of error message
     ErrorMessage::SetTime(rtc_get_counter_val());
+	Param::SetInt(Param::MODE, (Param::GetInt(Param::Status)));
+	Param::SetInt(Param::Brake, (Param::GetInt(Param::Brake_IN)));
 	Lock1 = ((float)AnaIn::Lock1.Get());
 	Lock2 = ((float)AnaIn::Lock2.Get());
 	Param::SetInt(Param::Lock1, Lock1);
 	Param::SetInt(Param::Lock2, Lock2);
 	M1_Locking();
-	
 }
 
 
@@ -79,60 +85,11 @@ static void Ms100Task(void)
     Param::SetFloat(Param::VOLTAGE, ((float)AnaIn::Vsense.Get()) / uauxGain);
     float cpuLoad = scheduler->GetCpuLoad();
     Param::SetFloat(Param::CPU_LOAD, cpuLoad / 10);
-	MagAngle::ReadMag1Angle();
-   // CAN_Common::Task100Ms();
-    Param::SetInt(Param::GEAR, (Param::GetInt(Param::gear)));
+	canMap->SendAll();
+	Can_Tasks();
+    Set_Gear();
 	
-	
-	/*
-	
-	if (Param::GetInt(Param::P_LED)) DigIo::P_LED.Set();
-	else DigIo::P_LED.Clear();
-	
-	if (Param::GetInt(Param::R_LED)) DigIo::R_LED.Set();
-	else DigIo::R_LED.Clear();
-	
-	if (Param::GetInt(Param::N_LED)) DigIo::N_LED.Set();
-	else DigIo::N_LED.Clear();
-	
-	if (Param::GetInt(Param::D_LED)) DigIo::D_LED.Set();
-	else DigIo::D_LED.Clear();
-	
-	if (Param::GetInt(Param::BkLT_LED)) DigIo::BkLT_LED.Set();
-	else DigIo::BkLT_LED.Clear();
-	
-	if (Param::GetInt(Param::M1_CW)) DigIo::M1_CW.Set();
-	else DigIo::M1_CW.Clear();
-	
-	if (Param::GetInt(Param::M1_CCW)) DigIo::M1_CCW.Set();
-	else DigIo::M1_CCW.Clear();
-	
-	if (Param::GetInt(Param::M2_CW)) DigIo::M2_CW.Set();
-	else DigIo::M2_CW.Clear();
-	
-	if (Param::GetInt(Param::M2_CCW)) DigIo::M2_CCW.Set();
-	else DigIo::M2_CCW.Clear();
-	
-	if (Param::GetInt(Param::CS1)) DigIo::CS1.Set();
-	else DigIo::CS1.Clear();
-	
-	if (Param::GetInt(Param::CS2)) DigIo::CS2.Set();
-	else DigIo::CS2.Clear();
-*/
-	
-	
-	
-    uint8_t bytes[8];
-    bytes[0]=0x05;
-    bytes[1]=0x00;
-    bytes[2]=0x01;
-    bytes[3]=0x10;
-    bytes[4]=0x00;
-    bytes[5]=0x00;
-    bytes[6]=0x00;
-    bytes[7]=0x69;
-    can->Send(0x380, bytes, 8); //Send on CAN1
-		
+    
 }
 
 static void Ms200Task(void)
@@ -142,6 +99,64 @@ static void Ms200Task(void)
 	
 }
 
+void Set_Gear()
+{
+	MagAngle::ReadMag1Angle();
+	switch (Param::GetInt(Param::Angle))
+	{
+		case 340 ... 360:
+			Param::SetInt(Param::GEAR, 4);
+			shiftPos = 0xFF; //Error
+		break;
+		case 298 ... 339:
+			Param::SetInt(Param::GEAR, 4);
+			if (Param::GetInt(Param::MODE)) Param::SetInt(Param::GEAR, 3);
+			shiftPos = 0x78; //Drive
+		break;
+		case 253 ... 297:
+			Param::SetInt(Param::GEAR, 4);
+			if (Param::GetInt(Param::MODE)) Param::SetInt(Param::GEAR, 2);
+			shiftPos = 0xB4; //Neutral
+		break;
+		case 205 ... 252:
+			Param::SetInt(Param::GEAR, 4);
+			if (Param::GetInt(Param::MODE)) Param::SetInt(Param::GEAR, 1);
+			shiftPos = 0xD2; //Reverse
+		break;
+		case 175 ... 204:
+			Param::SetInt(Param::GEAR, 0);
+			Param::SetInt(Param::M1_LOCK, 1);
+			if ((Param::GetInt(Param::Brake_IN)) && (Param::GetInt(Param::MODE))) Param::SetInt(Param::M1_LOCK, 0);
+			shiftPos = 0xE1; //Park
+		break;
+		case 0 ... 174:
+			Param::SetInt(Param::GEAR, 4);
+			shiftPos = 0xFF; //Error
+		break;
+	}
+}
+
+void Can_Tasks()
+{
+	can->RegisterUserMessage(0x198);
+	uint8_t bytes[8];
+    bytes[0]= shiftPos;
+    bytes[1]= 0x00;
+	if (Param::GetInt(Param::KNOB_LOCK)) bytes[1] = 0xFF;
+    bytes[2]= Gcount;
+    bytes[3]= shiftPos + 0x0A;
+    
+    can->Send(0x1D2, bytes, 4); //Send on CAN1	
+	
+	Gcount = Gcount + 0x01;
+   
+   if (Gcount==0xFF)
+   {
+      Gcount=0x00;
+   }
+}
+	
+		
 void PinIntialization()
 {
 	DigIo::P_LED.Clear();
@@ -163,35 +178,35 @@ void Power_ON()
 {
 	switch(PON_counter)
 	{
-		case 0:
+		case 0 ... 1:
 			DigIo::P_LED.Set();
 			DigIo::R_LED.Clear();
 			DigIo::N_LED.Clear();
 			DigIo::D_LED.Clear();
 			PON_counter++;
 			break;
-		case 1:
+		case 2 ... 3:
 			DigIo::P_LED.Clear();
 			DigIo::R_LED.Set();
 			DigIo::N_LED.Clear();
 			DigIo::D_LED.Clear();
 			PON_counter++;
 			break;
-		case 2:
+		case 4 ... 5:
 			DigIo::P_LED.Clear();
 			DigIo::R_LED.Clear();
 			DigIo::N_LED.Set();
 			DigIo::D_LED.Clear();
 			PON_counter++;
 			break;
-		case 3:
+		case 6 ... 7:
 			DigIo::P_LED.Clear();
 			DigIo::R_LED.Clear();
 			DigIo::N_LED.Clear();
 			DigIo::D_LED.Set();
 			PON_counter++;
 			break;
-		case 4:
+		case 8 ... 9:
 			DigIo::P_LED.Clear();
 			DigIo::R_LED.Clear();
 			DigIo::N_LED.Clear();
@@ -199,45 +214,49 @@ void Power_ON()
 			DigIo::BkLT_LED.Set();
 			PON_counter++;
 			break;
-		case 5:
+		case 10:
+		LED_RUN = 1;
 			break;
 	}
 }
 
 void Set_LED()
 {
-	switch(Param::GetInt(Param::GEAR))
+	if (LED_RUN)
 	{
-		case 0:
-			DigIo::P_LED.Set();
-			DigIo::R_LED.Clear();
-			DigIo::N_LED.Clear();
-			DigIo::D_LED.Clear();
-			break;
-		case 1:
-			DigIo::P_LED.Clear();
-			DigIo::R_LED.Set();
-			DigIo::N_LED.Clear();
-			DigIo::D_LED.Clear();
-			break;
-		case 2:
-			DigIo::P_LED.Clear();
-			DigIo::R_LED.Clear();
-			DigIo::N_LED.Set();
-			DigIo::D_LED.Clear();
-			break;
-		case 3:
-			DigIo::P_LED.Clear();
-			DigIo::R_LED.Clear();
-			DigIo::N_LED.Clear();
-			DigIo::D_LED.Set();
-			break;		
-		case 4:
-			DigIo::P_LED.Toggle();
-			DigIo::R_LED.Toggle();
-			DigIo::N_LED.Toggle();
-			DigIo::D_LED.Toggle();
-			break;
+		switch(Param::GetInt(Param::GEAR))
+		{
+			case 0:
+				DigIo::P_LED.Set();
+				DigIo::R_LED.Clear();
+				DigIo::N_LED.Clear();
+				DigIo::D_LED.Clear();
+				break;
+			case 1:
+				DigIo::P_LED.Clear();
+				DigIo::R_LED.Set();
+				DigIo::N_LED.Clear();
+				DigIo::D_LED.Clear();
+				break;
+			case 2:
+				DigIo::P_LED.Clear();
+				DigIo::R_LED.Clear();
+				DigIo::N_LED.Set();
+				DigIo::D_LED.Clear();
+				break;
+			case 3:
+				DigIo::P_LED.Clear();
+				DigIo::R_LED.Clear();
+				DigIo::N_LED.Clear();
+				DigIo::D_LED.Set();
+				break;		
+			case 4:
+				DigIo::P_LED.Toggle();
+				DigIo::R_LED.Toggle();
+				DigIo::N_LED.Toggle();
+				DigIo::D_LED.Toggle();
+				break;
+		}
 	}
 }
 
@@ -327,38 +346,16 @@ void Param::Change(Param::PARAM_NUM paramNum)
 {
     switch (paramNum)
     {
-		case Param::nodeid:
-        // CanSdo->SetNodeId(Param::GetInt(Param::nodeid));
+		case Param::NodeId:
+			canSdo->SetNodeId(Param::GetInt(Param::NodeId));
 			break; 
 		case Param::M1_LOCK:
-			//M1_Locking();
+			break;
 	default:
         //Handle general parameter changes here. Add paramNum labels for handling specific parameters
 		
         break;
     }
-}
-
-static void HandleClear()//Must add the ids to be received here as this set the filters.
-{
-    can->RegisterUserMessage(0x100);
-
-}
-
-static bool CanCallback(uint32_t id, uint32_t data[2], uint8_t dlc)//Here we decide what to to with the received ids. e.g. call a function in another class etc.
-{
-    dlc=dlc;
-    switch (id)
-    {
-    case 0x100:
-        CAN_Common::HandleCan(data);//can also pass the id and dlc if required to do further work downstream.
-        break;
-    default:
-
-        break;
-    }
-    return false;
-
 }
 
 //Whichever timer(s) you use for the scheduler, you have to
@@ -376,37 +373,26 @@ extern "C" int main(void)
     rtc_setup();
     ANA_IN_CONFIGURE(ANA_IN_LIST);
     DIG_IO_CONFIGURE(DIG_IO_LIST);
-    gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON, AFIO_MAPR_CAN1_REMAP_PORTB);//Remap CAN pins to Portb alt funcs.
-    AnaIn::Start(); //Starts background ADC conversion via DMA
+	AnaIn::Start(); //Starts background ADC conversion via DMA
     write_bootloader_pininit(); //Instructs boot loader to initialize certain pins
+    gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON, AFIO_MAPR_CAN1_REMAP_PORTB);//Remap CAN pins to Portb alt funcs.
     nvic_setup(); //Set up some interrupts
     parm_load(); //Load stored parameters
 	spi1_setup();											
     Stm32Scheduler s(TIM2); //We never exit main so it's ok to put it on stack
     scheduler = &s;
-	
     //Initialize CAN1, including interrupts. Clock must be enabled in clock_setup()
     Stm32Can c(CAN1, CanHardware::Baud500,true);
-    FunctionPointerCallback cb(CanCallback, HandleClear);
-
-//store a pointer for easier access
-    can = &c;
-   // c.SetNodeId(2);
-    c.AddCallback(&cb);
-    CanMap cm(&c);
-    CanSdo sdo(&c, &cm);
-    TerminalCommands::SetCanMap(&cm);
-    HandleClear();
-    sdo.SetNodeId(2);
-
-    canMap = &cm;
-
-    CAN_Common::SetCan(&c);
-
+	CanMap cm(&c);
+	CanSdo sdo(&c, &cm);
+	sdo.SetNodeId(Param::GetInt(Param::NodeId));
+	//store a pointer for easier access
+	can = &c;
+	canMap = &cm;
+    canSdo = &sdo;
     Terminal t(USART3, termCmds);
     TerminalCommands::SetCanMap(canMap);
-
-
+  
     s.AddTask(Ms10Task, 10);
     s.AddTask(Ms100Task, 100);
 	s.AddTask(Ms200Task, 200);
