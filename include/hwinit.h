@@ -37,6 +37,7 @@ void Power_ON();
 void Set_LED();
 void Can_Tasks();
 void Set_Gear();
+void DecodeCAN();
 
 #ifdef __cplusplus
 }

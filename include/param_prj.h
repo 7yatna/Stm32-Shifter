@@ -39,7 +39,7 @@
  */
 
 //Define a version string of your firmware here
-#define VER 0.02AK
+#define VER 1.00AK
 
 /* Entries must be ordered as follows:
    1. Saveable parameters (id != 0)
@@ -50,10 +50,10 @@
 //Next value Id: 2028
 /*              category     name         unit       min     max     default id */
 #define PARAM_LIST \
-	PARAM_ENTRY(CAT_IO,    	   	Status,     OPMODES,    0,      1,      0,   1) \
-	PARAM_ENTRY(CAT_IO,    	   	Gear,     	GEARS,     	0,      4,      4,   2) \
-	PARAM_ENTRY(CAT_IO,        	M1_LOCK,    OFFON,     	0,      1,      0,   3) \
-	PARAM_ENTRY(CAT_IO,        	Brake_IN,   OFFON,     	0,      1,      0,   4) \
+	PARAM_ENTRY(CAT_IO,    	   	Mode,       OPMODES,    0,      1,      0,   1) \
+	PARAM_ENTRY(CAT_IO,        	M1_LOCK,    OFFON,     	0,      1,      0,   2) \
+	PARAM_ENTRY(CAT_IO,        	Brake_IN,   OFFON,     	0,      1,      0,   3) \
+	PARAM_ENTRY(CAT_IO,        	CanCtrl,    OFFON,     	0,      1,      0,   4) \
 	PARAM_ENTRY(CAT_IO,         NodeId,     "",     	1,      63,     5,   5) \
 	VALUE_ENTRY(MODE,        	OPMODES,	2000 )\
 	VALUE_ENTRY(Brake,			OFFON, 		2001 )\

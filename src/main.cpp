@@ -39,7 +39,6 @@
 #include "stm32scheduler.h"
 #include "terminalcommands.h"
 #include "my_string.h"
-//#include "CAN_Common.h"
 #include "mag_snsor.h"
 #define PRINT_JSON 0
 
@@ -56,6 +55,7 @@ static CanSdo* canSdo;
 int uauxGain = 223; //!! hard coded AUX gain
 int Lock1 = 0;
 int Lock2 = 0;
+int CanLock = 1;
 int lock_counter = 0;
 int PON_counter = 0;
 int LED_RUN = 0;
@@ -67,7 +67,7 @@ static void Ms10Task(void)
 {
     //Set timestamp of error message
     ErrorMessage::SetTime(rtc_get_counter_val());
-	Param::SetInt(Param::MODE, (Param::GetInt(Param::Status)));
+	Param::SetInt(Param::MODE, (Param::GetInt(Param::Mode)));
 	Param::SetInt(Param::Brake, (Param::GetInt(Param::Brake_IN)));
 	Lock1 = ((float)AnaIn::Lock1.Get());
 	Lock2 = ((float)AnaIn::Lock2.Get());
@@ -88,15 +88,18 @@ static void Ms100Task(void)
 	canMap->SendAll();
 	Can_Tasks();
     Set_Gear();
-	
-    
 }
 
 static void Ms200Task(void)
 {
 	Power_ON();
 	Set_LED();
-	
+	if ((Param::GetInt(Param::CanCtrl) == 0)  && (CanLock))
+	{
+		Param::SetInt(Param::Mode, 0);
+		Param::SetInt(Param::Brake_IN, 0);
+		CanLock = 0;
+	}
 }
 
 void Set_Gear()
@@ -126,7 +129,7 @@ void Set_Gear()
 		case 175 ... 204:
 			Param::SetInt(Param::GEAR, 0);
 			Param::SetInt(Param::M1_LOCK, 1);
-			if ((Param::GetInt(Param::Brake_IN)) && (Param::GetInt(Param::MODE))) Param::SetInt(Param::M1_LOCK, 0);
+			if ((Param::GetInt(Param::Brake)) && (Param::GetInt(Param::MODE))) Param::SetInt(Param::M1_LOCK, 0);
 			shiftPos = 0xE1; //Park
 		break;
 		case 0 ... 174:
@@ -138,7 +141,7 @@ void Set_Gear()
 
 void Can_Tasks()
 {
-	can->RegisterUserMessage(0x198);
+	
 	uint8_t bytes[8];
     bytes[0]= shiftPos;
     bytes[1]= 0x00;
@@ -156,6 +159,18 @@ void Can_Tasks()
    }
 }
 	
+void DecodeCAN(int id, uint32_t* data)
+{
+	uint8_t* bytes = (uint8_t*)data;
+	switch (id)
+	{
+		case 0x1AE:
+			Param::SetInt(Param::Mode, bytes[0]);
+			Param::SetInt(Param::Brake_IN, bytes[1]);
+			break;
+	}
+			
+}
 		
 void PinIntialization()
 {
@@ -339,6 +354,25 @@ void M1_Locking()
 }
 
 
+static void SetCanFilters()
+{
+	can->RegisterUserMessage(0x601); //Can SDO
+	can->RegisterUserMessage(0x1AE); //OI Control Message
+}
+	
+static bool CanCallback(uint32_t id, uint32_t data[2], uint8_t dlc) //This is where we go when a defined CAN message is received.
+{
+    dlc = dlc;
+	if (Param::GetInt(Param::CanCtrl)) DecodeCAN(id,data);
+	else
+	{
+		Param::SetInt(Param::MODE, (Param::GetInt(Param::Mode)));
+		Param::SetInt(Param::Brake, (Param::GetInt(Param::Brake_IN)));
+	}		
+		
+	return false;
+}
+
 /** This function is called when the user changes a parameter */
 
 
@@ -350,6 +384,9 @@ void Param::Change(Param::PARAM_NUM paramNum)
 			canSdo->SetNodeId(Param::GetInt(Param::NodeId));
 			break; 
 		case Param::M1_LOCK:
+			break;
+		case Param::CanCtrl:
+			SetCanFilters();
 			break;
 	default:
         //Handle general parameter changes here. Add paramNum labels for handling specific parameters
@@ -383,6 +420,7 @@ extern "C" int main(void)
     scheduler = &s;
     //Initialize CAN1, including interrupts. Clock must be enabled in clock_setup()
     Stm32Can c(CAN1, CanHardware::Baud500,true);
+	FunctionPointerCallback cb(CanCallback, SetCanFilters);
 	CanMap cm(&c);
 	CanSdo sdo(&c, &cm);
 	sdo.SetNodeId(Param::GetInt(Param::NodeId));
@@ -390,6 +428,7 @@ extern "C" int main(void)
 	can = &c;
 	canMap = &cm;
     canSdo = &sdo;
+	c.AddCallback(&cb);
     Terminal t(USART3, termCmds);
     TerminalCommands::SetCanMap(canMap);
   
@@ -400,6 +439,12 @@ extern "C" int main(void)
     Param::SetInt(Param::version, 4);
     Param::Change(Param::PARAM_LAST); //Call callback one for general parameter propagation
 	PinIntialization();
+	SetCanFilters();
+	if (Param::GetInt(Param::CanCtrl) == 0)
+	{
+		Param::SetInt(Param::Mode, 0);
+		Param::SetInt(Param::Brake_IN, 0);
+	}
 	
 
     while(1)
