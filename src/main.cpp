@@ -94,6 +94,7 @@ static void Ms200Task(void)
 {
 	Power_ON();
 	Set_LED();
+
 	if ((Param::GetInt(Param::CanCtrl) == 0)  && (CanLock))
 	{
 		Param::SetInt(Param::Mode, 0);
@@ -167,6 +168,8 @@ void DecodeCAN(int id, uint32_t* data)
 		case 0x1AE:
 			Param::SetInt(Param::Mode, bytes[0]);
 			Param::SetInt(Param::Brake_IN, bytes[1]);
+			break;
+		default:
 			break;
 	}
 			
@@ -356,20 +359,14 @@ void M1_Locking()
 
 static void SetCanFilters()
 {
-	can->RegisterUserMessage(0x601); //Can SDO
+	can->RegisterUserMessage(0x605); //Can SDO
 	can->RegisterUserMessage(0x1AE); //OI Control Message
 }
 	
 static bool CanCallback(uint32_t id, uint32_t data[2], uint8_t dlc) //This is where we go when a defined CAN message is received.
 {
     dlc = dlc;
-	if (Param::GetInt(Param::CanCtrl)) DecodeCAN(id,data);
-	else
-	{
-		Param::SetInt(Param::MODE, (Param::GetInt(Param::Mode)));
-		Param::SetInt(Param::Brake, (Param::GetInt(Param::Brake_IN)));
-	}		
-		
+	if (Param::GetInt(Param::CanCtrl)) DecodeCAN(id,data);		
 	return false;
 }
 
